@@ -21,10 +21,10 @@ SELECT jwt_decode_payload('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0
 statement error
 SELECT jwt_decode_payload('invalid_jwt');
 ----
-Invalid JWT format: no dots found
+Invalid Input Error: Invalid JWT format: no dots found
 
 # Test with an invalid JWT (only one dot)
 statement error
 SELECT jwt_decode_payload('invalid.jwt');
 ----
-Invalid JWT format: only one dot found 
+Invalid Input Error: Invalid JWT format: only one dot found
