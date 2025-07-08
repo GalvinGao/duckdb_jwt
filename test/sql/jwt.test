@@ -1,0 +1,30 @@
+# name: test/sql/jwt.test
+# description: test jwt extension
+# group: [sql]
+
+# Before we load the extension, this will fail
+statement error
+SELECT jwt_decode_payload('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c');
+----
+Catalog Error: Scalar Function with name jwt_decode_payload does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require jwt
+
+# Confirm the extension works
+query I
+SELECT jwt_decode_payload('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c');
+----
+{"sub":"1234567890","name":"John Doe","iat":1516239022}
+
+# Test with an invalid JWT (missing parts)
+statement error
+SELECT jwt_decode_payload('invalid_jwt');
+----
+Invalid JWT format: no dots found
+
+# Test with an invalid JWT (only one dot)
+statement error
+SELECT jwt_decode_payload('invalid.jwt');
+----
+Invalid JWT format: only one dot found 
