@@ -119,7 +119,7 @@ std::string JwtExtension::Name() {
     return "jwt";
 }
 
-std::string JwtExtension::Version() {
+std::string JwtExtension::Version() const {
     return DuckDB::LibraryVersion();
 }
 
