@@ -8,62 +8,53 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include "mbedtls/base64.h"
 
 using namespace duckdb;
 
 namespace jwt_extension {
 
-// Base64 URL-safe decoding table
-static const int base64_url_decode_table[256] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1,
-    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,
-    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, 63,
-    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-};
-
-// Base64 URL-safe decode function
-std::string base64_url_decode(const std::string& encoded) {
-    std::string input = encoded;
+// Base64 URL-safe to standard Base64 conversion
+std::string base64url_to_base64(const std::string& base64url) {
+    std::string base64 = base64url;
+    // Replace URL-safe characters with standard Base64 characters
+    StringUtil::Replace(base64, "-", "+");
+    StringUtil::Replace(base64, "_", "/");
 
     // Add padding if needed
-    int padding = (4 - (input.length() % 4)) % 4;
-    input.append(padding, '=');
+    int padding = (4 - (base64.length() % 4)) % 4;
+    base64.append(padding, '=');
 
-    std::string decoded;
-    decoded.reserve(input.length() * 3 / 4);
+    return base64;
+}
 
-    for (size_t i = 0; i < input.length(); i += 4) {
-        int a = base64_url_decode_table[static_cast<unsigned char>(input[i])];
-        int b = base64_url_decode_table[static_cast<unsigned char>(input[i + 1])];
-        int c = base64_url_decode_table[static_cast<unsigned char>(input[i + 2])];
-        int d = base64_url_decode_table[static_cast<unsigned char>(input[i + 3])];
+// Base64 URL-safe decode function using mbedtls
+std::string base64_url_decode(const std::string& encoded) {
+    // Convert from base64url to standard base64
+    std::string base64 = base64url_to_base64(encoded);
 
-        if (a == -1 || b == -1 || c == -1 || d == -1) {
-            throw std::runtime_error("Invalid base64 character");
-        }
+    // Get the required output buffer size
+    size_t output_len = 0;
+    int ret = mbedtls_base64_decode(nullptr, 0, &output_len,
+                                   (const unsigned char*)base64.c_str(), base64.length());
 
-        decoded += static_cast<char>((a << 2) | (b >> 4));
-        if (input[i + 2] != '=') {
-            decoded += static_cast<char>(((b & 0x0F) << 4) | (c >> 2));
-        }
-        if (input[i + 3] != '=') {
-            decoded += static_cast<char>(((c & 0x03) << 6) | d);
-        }
+    if (ret != MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL) {
+        throw std::runtime_error("Failed to calculate base64 decoded size");
     }
 
-    return decoded;
+    // Allocate buffer for decoded data
+    std::vector<unsigned char> decoded(output_len);
+
+    // Decode the base64 string
+    ret = mbedtls_base64_decode(decoded.data(), decoded.size(), &output_len,
+                               (const unsigned char*)base64.c_str(), base64.length());
+
+    if (ret != 0) {
+        throw std::runtime_error("Invalid base64 character");
+    }
+
+    // Convert to string
+    return std::string(reinterpret_cast<char*>(decoded.data()), output_len);
 }
 
 // JWT payload decoding function
