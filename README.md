@@ -91,43 +91,6 @@ To run the SQL tests for this extension:
 make test
 ```
 
-## Installing from Deployed Binaries
-
-To install the extension from deployed binaries:
-
-1. Launch DuckDB with unsigned extensions allowed:
-
-   CLI:
-
-   ```shell
-   duckdb -unsigned
-   ```
-
-   Python:
-
-   ```python
-   con = duckdb.connect(':memory:', config={'allow_unsigned_extensions': 'true'})
-   ```
-
-   NodeJS:
-
-   ```js
-   db = new duckdb.Database(':memory:', {"allow_unsigned_extensions": "true"});
-   ```
-
-2. Set the repository endpoint:
-
-   ```sql
-   SET custom_extension_repository='bucket.s3.eu-west-1.amazonaws.com/jwt/latest';
-   ```
-
-3. Install and load the extension:
-
-   ```sql
-   INSTALL jwt;
-   LOAD jwt;
-   ```
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

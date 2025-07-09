@@ -108,7 +108,7 @@ std::string JwtExtension::Name() {
 }
 
 std::string JwtExtension::Version() const {
-	return DuckDB::LibraryVersion();
+	return "v0.0.1";
 }
 
 } // namespace duckdb
@@ -119,7 +119,7 @@ DUCKDB_EXTENSION_API void jwt_init(duckdb::DatabaseInstance &db) {
 }
 
 DUCKDB_EXTENSION_API const char *jwt_version() {
-	return DuckDB::LibraryVersion();
+	return "v0.0.1";
 }
 }
 
